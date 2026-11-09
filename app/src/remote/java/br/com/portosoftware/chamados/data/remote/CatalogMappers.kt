@@ -23,65 +23,77 @@ import kotlinx.serialization.json.jsonPrimitive
 
 private fun String?.required(field: String): String = this ?: error("Campo obrigatório ausente: $field")
 
-internal fun ApplicantResponseDTO.toDomain() = Applicant(
-    id = id.required("id"),
-    name = name.required("name"),
-    email = email,
-    phone = phone,
-    unitId = unitId,
-    unitName = unitName,
-    localId = localId,
-    localName = localName,
-    positionId = positionId,
-    positionName = positionName,
-)
+internal fun ApplicantResponseDTO.toDomain() =
+    Applicant(
+        id = id.required("id"),
+        name = name.required("name"),
+        email = email,
+        phone = phone,
+        unitId = unitId,
+        unitName = unitName,
+        localId = localId,
+        localName = localName,
+        positionId = positionId,
+        positionName = positionName,
+    )
 
 internal fun PositionResponseDTO.toDomain() = Position(id.required("id"), name.required("name"))
 
-private fun JsonElement?.namedValue(): String? = this?.jsonObject?.get("name")?.jsonPrimitive?.content
+private fun JsonElement?.namedValue(): String? =
+    this
+        ?.jsonObject
+        ?.get("name")
+        ?.jsonPrimitive
+        ?.content
 
 private fun EquipmentModelResponseDTO.brandName(): String? = brand.namedValue()
 
-internal fun EquipmentResponseDTO.toDomain() = Equipment(
-    id = id.required("id"),
-    patrimony = patrimony,
-    model = listOfNotNull(model?.equipmentType?.name, model?.brandName(), model?.name)
-        .filter { it.isNotBlank() }
-        .distinct()
-        .joinToString(" ")
-        .ifBlank { null },
-)
+internal fun EquipmentResponseDTO.toDomain() =
+    Equipment(
+        id = id.required("id"),
+        patrimony = patrimony,
+        model =
+            listOfNotNull(model?.equipmentType?.name, model?.brandName(), model?.name)
+                .filter { it.isNotBlank() }
+                .distinct()
+                .joinToString(" ")
+                .ifBlank { null },
+    )
 
 internal fun UnitResponseDTO.toDomain() = OrgUnit(id.required("id"), name.required("name"))
 
-internal fun LocalResponseDTO.toDomain() = Local(
-    id = id.required("id"),
-    name = name.required("name"),
-    unitId = unit?.id ?: id.required("unit.id"),
-)
+internal fun LocalResponseDTO.toDomain() =
+    Local(
+        id = id.required("id"),
+        name = name.required("name"),
+        unitId = unit?.id ?: id.required("unit.id"),
+    )
 
 internal fun CategoryResponseDTO.toDomain() = Category(id.required("id"), name.required("name"))
 
-internal fun SubCategoryResponseDTO.toDomain() = SubCategory(
-    id = id.required("id"),
-    name = name.required("name"),
-    categoryId = category?.id ?: error("Campo obrigatório ausente: category.id"),
-)
+internal fun SubCategoryResponseDTO.toDomain() =
+    SubCategory(
+        id = id.required("id"),
+        name = name.required("name"),
+        categoryId = category?.id ?: error("Campo obrigatório ausente: category.id"),
+    )
 
-internal fun ItemResponseDTO.toDomain() = StockItem(
-    id = id.required("id"),
-    model = model?.name ?: itemType?.name ?: "Item",
-    brand = brand?.name ?: model?.brand,
-    type = itemType?.name ?: model?.type,
-    quantity = quantity ?: 0,
-    consumable = consumable == true,
-    patrimony = patrimony,
-    serialNumber = serialNumber,
-    specifications = specifications.orEmpty().mapNotNull { spec ->
-        val value = spec.value ?: return@mapNotNull null
-        val unit = spec.key?.unit?.takeUnless { value.contains(it, ignoreCase = true) }
-        val label = spec.key?.displayName ?: spec.key?.keyName ?: "Especificação"
-        label to listOfNotNull(value, unit).joinToString(" ")
-    },
-    isUnique = itemType?.isUnique == true,
-)
+internal fun ItemResponseDTO.toDomain() =
+    StockItem(
+        id = id.required("id"),
+        model = model?.name ?: itemType?.name ?: "Item",
+        brand = brand?.name ?: model?.brand,
+        type = itemType?.name ?: model?.type,
+        quantity = quantity ?: 0,
+        consumable = consumable == true,
+        patrimony = patrimony,
+        serialNumber = serialNumber,
+        specifications =
+            specifications.orEmpty().mapNotNull { spec ->
+                val value = spec.value ?: return@mapNotNull null
+                val unit = spec.key?.unit?.takeUnless { value.contains(it, ignoreCase = true) }
+                val label = spec.key?.displayName ?: spec.key?.keyName ?: "Especificação"
+                label to listOfNotNull(value, unit).joinToString(" ")
+            },
+        isUnique = itemType?.isUnique == true,
+    )

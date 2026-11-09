@@ -5,8 +5,8 @@ import br.com.portosoftware.chamados.contract.model.CallSummaryResponseDTO
 import br.com.portosoftware.chamados.contract.model.PagedModelCallSummaryResponseDTO
 import br.com.portosoftware.chamados.contract.model.Result
 import br.com.portosoftware.chamados.contract.model.SessionInfoResponseDTO
-import kotlinx.serialization.MissingFieldException
 import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.MissingFieldException
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonObject
@@ -32,15 +32,22 @@ class GeneratedModelsTest {
         assertEquals("2026-02-01T05:00:00.000000", call.openingDate)
         assertEquals(CallResponseDTO.Status.OPENED, call.status)
         assertEquals(CallResponseDTO.Priority.NORMAL, call.priority)
-        assertEquals("a.txt", call.attachments.orEmpty().first().originalFileName)
+        assertEquals(
+            "a.txt",
+            call.attachments
+                .orEmpty()
+                .first()
+                .originalFileName,
+        )
         assertNull(read<CallResponseDTO>("call-minimal").completionDate)
     }
 
     @Test
     fun `unknown enum values use generated fallback`() {
-        val body = response("call-full")
-            .replace("\"status\":\"OPENED\"", "\"status\":\"NEW\"")
-            .replace("\"priority\":\"NORMAL\"", "\"priority\":\"CRITICAL\"")
+        val body =
+            response("call-full")
+                .replace("\"status\":\"OPENED\"", "\"status\":\"NEW\"")
+                .replace("\"priority\":\"NORMAL\"", "\"priority\":\"CRITICAL\"")
         val call = ApiJson.decodeFromString<CallResponseDTO>(body)
         assertEquals(CallResponseDTO.Status.unknown_default_open_api, call.status)
         assertEquals(CallResponseDTO.Priority.unknown_default_open_api, call.priority)
@@ -62,7 +69,13 @@ class GeneratedModelsTest {
         val page = read<PagedModelCallSummaryResponseDTO>("calls-filter")
         assertEquals(2, page.content.orEmpty().size)
         assertEquals(2L, page.page?.propertySize)
-        assertEquals(CallSummaryResponseDTO.Status.IN_PROGRESS, page.content.orEmpty().first().status)
+        assertEquals(
+            CallSummaryResponseDTO.Status.IN_PROGRESS,
+            page.content
+                .orEmpty()
+                .first()
+                .status,
+        )
     }
 
     @Test

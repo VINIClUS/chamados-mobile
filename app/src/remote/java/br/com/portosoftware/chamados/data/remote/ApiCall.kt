@@ -34,6 +34,8 @@ internal val ApiJson =
 
 private const val TAG = "ApiCall"
 private const val HTTP_UNPROCESSABLE_ENTITY = 422
+private const val MIN_HTTP_ERROR_STATUS = 400
+private const val MAX_HTTP_ERROR_STATUS = 599
 
 /**
  * Converte exceções de rede/HTTP em [DomainError], lendo o `ApiErrorResponse` do backend.
@@ -100,15 +102,16 @@ internal fun HttpException.toDomainError(): DomainError {
     }
 }
 
-private fun parseApiError(body: String): Pair<String?, Map<String, String>>? = runCatching {
-    val json = ApiJson.parseToJsonElement(body).jsonObject
-    val status = json["status"]?.jsonPrimitive?.content?.toIntOrNull() ?: return null
-    if (status !in 400..599) return null
-    val error = json["error"] as? JsonPrimitive ?: return null
-    val message = json["message"] as? JsonPrimitive ?: return null
-    val violationObject = json["violations"] as? JsonObject ?: return null
-    if (violationObject.values.any { (it as? JsonPrimitive)?.isString != true }) return null
-    val violations = violationObject.mapValues { (_, value) -> value.jsonPrimitive.content }
-    error.content
-    message.content.takeIf { it.isNotBlank() } to violations
-}.getOrNull()
+private fun parseApiError(body: String): Pair<String?, Map<String, String>>? =
+    runCatching {
+        val json = ApiJson.parseToJsonElement(body).jsonObject
+        val status = json["status"]?.jsonPrimitive?.content?.toIntOrNull() ?: return null
+        if (status !in MIN_HTTP_ERROR_STATUS..MAX_HTTP_ERROR_STATUS) return null
+        val error = json["error"] as? JsonPrimitive ?: return null
+        val message = json["message"] as? JsonPrimitive ?: return null
+        val violationObject = json["violations"] as? JsonObject ?: return null
+        if (violationObject.values.any { (it as? JsonPrimitive)?.isString != true }) return null
+        val violations = violationObject.mapValues { (_, value) -> value.jsonPrimitive.content }
+        error.content
+        message.content.takeIf { it.isNotBlank() } to violations
+    }.getOrNull()

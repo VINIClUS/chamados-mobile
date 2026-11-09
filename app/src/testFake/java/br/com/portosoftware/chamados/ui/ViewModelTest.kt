@@ -69,7 +69,7 @@ class ViewModelTest {
         runTest {
             env.auth.restore()
             val vm = LoginViewModel(env.auth)
-            vm.onEmailChange("tecnico@chamados.test")
+            vm.onEmailChange("desconhecido@chamados.test")
             vm.onPasswordChange("errada")
             vm.submit()
             assertTrue(vm.state.value.loading)
@@ -116,7 +116,7 @@ class ViewModelTest {
         runTest {
             val vm = LoginViewModel(env.auth)
             vm.onEmailChange("tecnico@chamados.test")
-        vm.onPasswordChange("demo")
+            vm.onPasswordChange("demo")
             vm.submit()
             advanceUntilIdle()
             assertTrue(env.auth.session.value is SessionState.Active)
@@ -326,7 +326,7 @@ class ViewModelTest {
         runTest {
             val vm = LoginViewModel(env.auth)
             vm.onEmailChange("tecnico@chamados.test")
-        vm.onPasswordChange("demo")
+            vm.onPasswordChange("demo")
             vm.submit()
             advanceUntilIdle()
             env.auth.logout()

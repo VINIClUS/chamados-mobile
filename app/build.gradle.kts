@@ -14,8 +14,14 @@ plugins {
     alias(libs.plugins.openapi.generator)
 }
 
-val openApiContract = rootProject.layout.projectDirectory.file("contracts/backend/openapi.yaml").asFile
-val recordedResponses = rootProject.layout.projectDirectory.file("contracts/backend/responses.json").asFile
+val openApiContract =
+    rootProject.layout.projectDirectory
+        .file("contracts/backend/openapi.yaml")
+        .asFile
+val recordedResponses =
+    rootProject.layout.projectDirectory
+        .file("contracts/backend/responses.json")
+        .asFile
 
 // Chave de release fora do repositório (README, "Release"). Sem o arquivo, o release sai unsigned em vez de
 // falhar: o Generate Signed Bundle / APK do Android Studio injeta a chave por conta própria.
@@ -112,9 +118,15 @@ android {
         unitTests.all {
             it.jvmArgs("--add-exports=java.base/jdk.internal.access=ALL-UNNAMED", "--add-opens=java.base/jdk.internal.access=ALL-UNNAMED")
             if (it.name.contains("Remote")) {
-                it.inputs.file(openApiContract).withPropertyName("openApiContract").withPathSensitivity(PathSensitivity.RELATIVE)
+                it.inputs
+                    .file(openApiContract)
+                    .withPropertyName("openApiContract")
+                    .withPathSensitivity(PathSensitivity.RELATIVE)
                 it.systemProperty("chamados.contract", openApiContract.relativeTo(projectDir).path)
-                it.inputs.file(recordedResponses).withPropertyName("recordedResponses").withPathSensitivity(PathSensitivity.RELATIVE)
+                it.inputs
+                    .file(recordedResponses)
+                    .withPropertyName("recordedResponses")
+                    .withPathSensitivity(PathSensitivity.RELATIVE)
                 it.systemProperty("chamados.responses", recordedResponses.relativeTo(projectDir).path)
             }
         }
@@ -132,12 +144,13 @@ openApiGenerate {
     outputDir = layout.buildDirectory.dir("generated/kotlin/openApiGenerate")
     modelPackage = "br.com.portosoftware.chamados.contract.model"
     globalProperties = mapOf("models" to "", "modelDocs" to "false", "modelTests" to "false", "generateMetadata" to "false")
-    configOptions = mapOf(
-        "serializationLibrary" to "kotlinx_serialization",
-        "enumUnknownDefaultCase" to "true",
-        "dateLibrary" to "string",
-        "sourceFolder" to ".",
-    )
+    configOptions =
+        mapOf(
+            "serializationLibrary" to "kotlinx_serialization",
+            "enumUnknownDefaultCase" to "true",
+            "dateLibrary" to "string",
+            "sourceFolder" to ".",
+        )
     typeMappings = mapOf("AnyType" to "JsonElement", "object" to "JsonElement", "UUID" to "kotlin.String")
     importMappings = mapOf("JsonElement" to "kotlinx.serialization.json.JsonElement")
     cleanupOutput = true
@@ -159,15 +172,16 @@ tasks.withType<Detekt>().configureEach {
 androidComponents {
     onVariants { variant ->
         val name = variant.name.replaceFirstChar { it.uppercase() }
-        val generatedClasses = tasks.register<Sync>("detekt${name}GeneratedClasses") {
-            from(tasks.named<KotlinJvmCompile>("compile${name}Kotlin").flatMap { it.destinationDirectory }) {
-                include("br/com/portosoftware/chamados/contract/model/**")
+        val generatedClasses =
+            tasks.register<Sync>("detekt${name}GeneratedClasses") {
+                from(tasks.named<KotlinJvmCompile>("compile${name}Kotlin").flatMap { it.destinationDirectory }) {
+                    include("br/com/portosoftware/chamados/contract/model/**")
+                }
+                from(tasks.named<JavaCompile>("compile${name}JavaWithJavac").flatMap { it.destinationDirectory }) {
+                    include("br/com/portosoftware/chamados/BuildConfig.class")
+                }
+                into(layout.buildDirectory.dir("intermediates/detekt_generated_classes/${variant.name}"))
             }
-            from(tasks.named<JavaCompile>("compile${name}JavaWithJavac").flatMap { it.destinationDirectory }) {
-                include("br/com/portosoftware/chamados/BuildConfig.class")
-            }
-            into(layout.buildDirectory.dir("intermediates/detekt_generated_classes/${variant.name}"))
-        }
         tasks.withType<Detekt>().matching { it.name == "detekt$name" }.configureEach {
             classpath.from(tasks.named<KotlinJvmCompile>("compile${name}Kotlin").map { it.libraries }, generatedClasses)
         }

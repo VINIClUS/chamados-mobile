@@ -80,10 +80,10 @@ class RemoteCallRepository
                         unassigned = filter.unassigned.takeIf { it },
                         page = page,
                         size = size,
-            ).let { response ->
-                response.page?.toDomain(response.content.orEmpty().map { call -> call.toDomain() })
-                    ?: error("Resposta paginada sem page")
-            }
+                    ).let { response ->
+                        response.page?.toDomain(response.content.orEmpty().map { call -> call.toDomain() })
+                            ?: error("Resposta paginada sem page")
+                    }
             }
 
         override suspend fun detail(id: String): AppResult<CallDetail> = apiCall { api.call(id).toDomain() }
@@ -177,12 +177,12 @@ class RemoteCatalogRepository
             }
 
         override suspend fun categories(): AppResult<Page<Category>> =
-        apiCall {
-            api.categories().let { response ->
-                response.page?.toDomain(response.content.orEmpty().map { category -> category.toDomain() })
-                    ?: error("Resposta paginada sem page")
+            apiCall {
+                api.categories().let { response ->
+                    response.page?.toDomain(response.content.orEmpty().map { category -> category.toDomain() })
+                        ?: error("Resposta paginada sem page")
+                }
             }
-        }
 
         override suspend fun subcategories(categoryId: String): AppResult<List<SubCategory>> =
             apiCall {
@@ -231,10 +231,10 @@ class RemoteStockRepository
         private val api: ChamadosApi,
     ) : StockRepository {
         override suspend fun items(search: String): AppResult<Page<StockItem>> =
-    apiCall {
-        api.stock(search.trim().ifBlank { null }).let { response ->
-            response.page?.toDomain(response.content.orEmpty().map { item -> item.toDomain() })
-                ?: error("Resposta paginada sem page")
-        }
-    }
+            apiCall {
+                api.stock(search.trim().ifBlank { null }).let { response ->
+                    response.page?.toDomain(response.content.orEmpty().map { item -> item.toDomain() })
+                        ?: error("Resposta paginada sem page")
+                }
+            }
     }

@@ -38,7 +38,7 @@ class FakeAuthRepository
                         fail(DomainError.Network())
                     }
 
-            user == null || password.isBlank() -> {
+                    user == null || password.isBlank() -> {
                         fail(DomainError.Validation("E-mail ou senha inválidos."))
                     }
 
