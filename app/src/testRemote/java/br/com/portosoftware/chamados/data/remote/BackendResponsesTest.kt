@@ -141,7 +141,7 @@ class BackendResponsesTest {
             "positions" to Case(signedIn = true) { catalog.positions() },
             "stock" to Case(signedIn = true) { stock.items("") },
             "position-create" to Case(signedIn = true) { catalog.createPosition(body.text("name")) },
-            "position-create-invalid" to Case(signedIn = true) { catalog.createPosition(body.text("name")) },
+            "position-create-invalid" to Case(signedIn = true, sends = false) { catalog.createPosition("") },
             "position-create-without-csrf" to Case(signedIn = true) { catalog.createPosition(body.text("name")) },
             "applicant-create" to Case(signedIn = true) { applicants.create(newApplicant()) },
             "applicant-create-invalid" to Case(signedIn = true) { applicants.create(newApplicant()) },
@@ -585,7 +585,7 @@ class BackendResponsesTest {
 
     private companion object {
         const val ADMIN = "admin@chamados.test"
-        const val PASSWORD = "demo"
+        const val PASSWORD = "senha-de-teste"
         const val HEALTH = "5eed0002-0000-4000-8000-000000000001"
 
         /** Rota sem resposta servida: um pedido que o caso não esperava. */

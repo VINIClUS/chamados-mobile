@@ -107,8 +107,8 @@ private fun parseApiError(body: String): Pair<String?, Map<String, String>>? =
         val json = ApiJson.parseToJsonElement(body).jsonObject
         val status = json["status"]?.jsonPrimitive?.content?.toIntOrNull() ?: return null
         if (status !in MIN_HTTP_ERROR_STATUS..MAX_HTTP_ERROR_STATUS) return null
-        val error = json["error"] as? JsonPrimitive ?: return null
-        val message = json["message"] as? JsonPrimitive ?: return null
+        val error = (json["error"] as? JsonPrimitive)?.takeIf { it.isString } ?: return null
+        val message = (json["message"] as? JsonPrimitive)?.takeIf { it.isString } ?: return null
         val violationObject = json["violations"] as? JsonObject ?: return null
         if (violationObject.values.any { (it as? JsonPrimitive)?.isString != true }) return null
         val violations = violationObject.mapValues { (_, value) -> value.jsonPrimitive.content }
