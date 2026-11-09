@@ -14,6 +14,9 @@ class ReleaseWorkflowTest(unittest.TestCase):
             packages = setup.get('with', {}).get('packages', 'tools platform-tools').split()
             self.assertNotIn('tools', packages)
             self.assertIn('platform-tools', packages)
+            self.assertEqual('16111833', str(setup.get('with', {}).get('cmdline-tools-version', '')))
+            install = next(step for step in job['steps'] if step.get('name') == 'Install Android SDK 37')
+            self.assertIn('platforms;android-37.0', install['run'])
 
     def test_staging_receives_signing_and_release_credentials_together(self):
         workflow = yaml.safe_load((ROOT / '.github/workflows/android.yml').read_text())
