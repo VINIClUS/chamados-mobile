@@ -1,0 +1,143 @@
+name: Android
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+    tags: ['android-v*']
+    paths:
+      - app/**
+      - build.gradle.kts
+      - settings.gradle.kts
+      - gradle/**
+      - config/**
+      - tools/**
+      - contracts/backend/**
+      - scripts/**
+      - .github/workflows/android.yml
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    name: Android quality and contract tests
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: android-actions/setup-android@v3
+      - name: Install Android SDK 37
+        run: sdkmanager 'platforms;android-37' 'build-tools;37.0.0'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Verify backend contract snapshot
+        run: |
+          python3 -m unittest discover -s scripts/tests -v
+          python3 scripts/update-backend-contracts.py --check
+      - name: Run fake and remote tests, lint, and detekt
+        run: ./gradlew testFakeDebugUnitTest testRemoteDebugUnitTest lintFakeDebug lintRemoteDebug detektFakeDebug detektRemoteDebug ktlintCheck
+
+  staging:
+    name: Signed staging APK
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: quality
+    runs-on: ubuntu-24.04
+    environment:
+      name: staging
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: android-actions/setup-android@v3
+      - name: Install Android SDK 37
+        run: sdkmanager 'platforms;android-37' 'build-tools;37.0.0'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Build signed staging APK
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          CHAMADOS_API_BASE_URL: ${{ vars.CHAMADOS_API_BASE_URL }}
+          ANDROID_SIGNING_CERT_SHA256: ${{ vars.ANDROID_SIGNING_CERT_SHA256 }}
+        run: |
+          source tools/ci/signing.sh
+          tools/release/build-release.sh apks "-Pchamados.apiBaseUrl=$CHAMADOS_API_BASE_URL"
+          apk="$(find dist -mindepth 2 -maxdepth 2 -name app-remote-release.apk -print -quit)"
+          mapping="$(dirname "$apk")/mapping.txt"
+          actual="$("$ANDROID_HOME/build-tools/37.0.0/apksigner" verify --print-certs "$apk" | sed -n 's/^.*Signer.*certificate SHA-256 digest: //p' | tr -d ':' | tr '[:upper:]' '[:lower:]' | head -n1)"
+          test "$actual" = "${ANDROID_SIGNING_CERT_SHA256,,}"
+          # GitLab staging used CI_PIPELINE_IID and reached 54; keep the first GitHub sequence above it.
+          sequence=$((54 + GITHUB_RUN_NUMBER))
+          out="dist/staging-${sequence}"
+          mkdir -p "$out"
+          cp "$apk" "$out/chamados-android-staging-${sequence}.apk"
+          cp "$mapping" "$out/mapping-${sequence}.txt"
+          (cd "$out" && sha256sum *.apk *.txt > SHA256SUMS)
+          tag="android-staging-${sequence}-run-${GITHUB_RUN_NUMBER}"
+          gh release create "$tag" "$out"/* --prerelease --title "Android staging ${sequence}" --notes "Staging build from ${GITHUB_SHA}; API URL is configured by the staging environment."
+        env:
+          GH_TOKEN: ${{ github.token }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-staging-${{ github.run_number }}
+          path: dist/staging-*/
+          if-no-files-found: error
+          retention-days: 7
+
+  production:
+    name: Production release
+    if: startsWith(github.ref, 'refs/tags/android-v')
+    needs: quality
+    runs-on: ubuntu-24.04
+    environment:
+      name: production
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: android-actions/setup-android@v3
+      - name: Install Android SDK 37
+        run: sdkmanager 'platforms;android-37' 'build-tools;37.0.0'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Build and verify signed release
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          CHAMADOS_API_BASE_URL: ${{ vars.CHAMADOS_API_BASE_URL }}
+          ANDROID_SIGNING_CERT_SHA256: ${{ vars.ANDROID_SIGNING_CERT_SHA256 }}
+        run: |
+          git fetch origin main --no-tags
+          git merge-base --is-ancestor "$GITHUB_SHA" origin/main
+          source tools/ci/signing.sh
+          tools/release/build-release.sh apks "-Pchamados.apiBaseUrl=$CHAMADOS_API_BASE_URL"
+          apk="$(find dist -mindepth 2 -maxdepth 2 -name app-remote-release.apk -print -quit)"
+          mapping="$(dirname "$apk")/mapping.txt"
+          actual="$("$ANDROID_HOME/build-tools/37.0.0/apksigner" verify --print-certs "$apk" | sed -n 's/^.*Signer.*certificate SHA-256 digest: //p' | tr -d ':' | tr '[:upper:]' '[:lower:]' | head -n1)"
+          test "$actual" = "${ANDROID_SIGNING_CERT_SHA256,,}"
+          version="$(basename "$(dirname "$apk")")"
+          test "android-v${version%-*}" = "$GITHUB_REF_NAME"
+          mkdir -p dist/github-release
+          cp "$apk" "dist/github-release/chamados-${version}.apk"
+          cp "$mapping" "dist/github-release/mapping-${version}.txt"
+          (cd dist/github-release && sha256sum *.apk *.txt > SHA256SUMS)
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/github-release/*.apk
+            dist/github-release/*.txt
+            dist/github-release/SHA256SUMS
+          generate_release_notes: true

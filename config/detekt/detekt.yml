@@ -1,0 +1,72 @@
+# Só os desvios do padrão do detekt 2.0 (buildUponDefaultConfig = true).
+# Para ver o padrão completo: ./gradlew :app:detektGenerateConfig
+
+complexity:
+  CyclomaticComplexMethod:
+    # Em telas Compose cada if/when é um ramo de layout declarado, não lógica escondida.
+    ignoreAnnotated: ['Composable']
+  LongMethod:
+    # Telas Compose são árvores declarativas; o tamanho vem da estrutura visual.
+    ignoreAnnotated: ['Composable']
+    # Massa de dados do flavor fake: só literais.
+    excludes: ['**/data/fake/FakeData.kt']
+  LongParameterList:
+    # Composables recebem estado e callbacks por parâmetro (state hoisting).
+    ignoreAnnotated: ['Composable']
+    # Cada @Query do Retrofit é um parâmetro do endpoint, não um acoplamento.
+    ignoreAnnotatedParameter: ['Query']
+  TooManyFunctions:
+    excludes: &tests ['**/test/**', '**/testFake/**', '**/testRemote/**', '**/androidTest/**']
+    # Composables privados de uma tela e endpoints do Retrofit são declarações, não responsabilidades extras.
+    ignoreAnnotatedFunctions: ['Composable', 'Preview', 'PreviewLightDark', 'GET', 'POST', 'PUT', 'PATCH', 'DELETE']
+
+exceptions:
+  InstanceOfCheckForException:
+    excludes: *tests
+  ThrowingExceptionsWithoutMessageOrCause:
+    excludes: *tests
+  TooGenericExceptionCaught:
+    excludes: *tests
+
+naming:
+  FunctionNaming:
+    excludes: *tests
+    ignoreAnnotated: ['Composable']
+
+performance:
+  ForEachOnRange:
+    excludes: *tests
+  SpreadOperator:
+    excludes: *tests
+
+potential-bugs:
+  LateinitUsage:
+    excludes: *tests
+  UnsafeCallOnNullableType:
+    excludes: *tests
+
+style:
+  ReturnCount:
+    # Guard clauses (`?: return`, `if (...) return` no início) são o idioma Kotlin para pré-condições.
+    excludeGuardClauses: true
+  MagicNumber:
+    # FakeData.kt é a massa de dados do flavor fake (quantidades, dias atrás).
+    excludes: ['**/test/**', '**/testFake/**', '**/testRemote/**', '**/androidTest/**', '**/*.kts', '**/data/fake/FakeData.kt']
+    # Medidas de layout (16.dp, 0.6f de alpha) fazem parte da declaração da UI.
+    ignoreAnnotated: ['Composable']
+  UnusedPrivateFunction:
+    # Previews privadas são chamadas pelo Android Studio, não pelo código.
+    ignoreAnnotated: ['Preview', 'PreviewLightDark']
+  MaxLineLength:
+    # Igual ao max_line_length do .editorconfig (ktlint).
+    maxLineLength: 140
+
+Compose:
+  # Garante que o app use só Material 3.
+  Material2:
+    active: true
+  CompositionLocalAllowlist:
+    # Cores estendidas (status/prioridade) seguem o padrão do MaterialTheme para extensões de tema.
+    allowedCompositionLocals: ['LocalExtendedColors']
+  # UnstableCollections fica desligada (padrão): com strong skipping, ligado por padrão
+  # no compilador Compose do Kotlin 2.x, List como parâmetro não impede o skip.

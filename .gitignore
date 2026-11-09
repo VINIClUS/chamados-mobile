@@ -1,0 +1,13 @@
+__pycache__/
+*.py[cod]
+.gradle/
+build/
+local.properties
+.idea/
+.kotlin/
+*.iml
+captures/
+!gradle/wrapper/gradle-wrapper.jar
+app/fake/release/
+app/remote/release/
+dist/

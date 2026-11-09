@@ -1,0 +1,11 @@
+// Só na CI: o tools/ci/install-sdk.sh copia este arquivo para $GRADLE_USER_HOME/init.d. O Robolectric baixa os jars
+// android-all (~200 MB) para o maven.repo.local do JVM dos testes, que por padrão é ~/.m2, fora do cache do job.
+// Com ROBOLECTRIC_REPO (definida no android:check), eles vão para uma pasta que o cache guarda.
+def robolectricRepo = System.getenv('ROBOLECTRIC_REPO')
+if (robolectricRepo) {
+    gradle.allprojects {
+        tasks.withType(Test).configureEach {
+            systemProperty 'maven.repo.local', robolectricRepo
+        }
+    }
+}
