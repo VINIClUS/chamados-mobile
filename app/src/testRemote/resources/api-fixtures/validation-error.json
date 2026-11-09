@@ -1,0 +1,1 @@
+{"timestamp":"2026-11-07T20:12:31.886942735Z","status":400,"error":"Bad Request","message":"O conteúdo da requisição é inválido.","path":"/api/calls","violations":{"description":"A descrição é obrigatória.","localId":"O local é obrigatório."}}
