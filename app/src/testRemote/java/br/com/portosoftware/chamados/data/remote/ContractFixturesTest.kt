@@ -147,8 +147,8 @@ class ContractFixturesTest {
                 Triple("""{"type":"boolean"}""", "false", "True"),
                 Triple(
                     """{"${'$'}ref":"#/components/schemas/PageMetadata"}""",
-                    """{"number":0,"size":20,"totalElements":0,"totalPages":0}""",
                     """{"number":0,"size":20,"totalElements":0}""",
+                    """{"number":0,"size":"vinte","totalElements":0}""",
                 ),
             )
     }

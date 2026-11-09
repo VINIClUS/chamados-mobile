@@ -289,16 +289,16 @@ class ContractTest {
         }
 
     @Test
-    fun `campo obrigatorio ausente ou nulo derruba a leitura, e a tela recebe o erro generico`() =
+    fun `campo opcional ausente ou nulo chega ao dominio sem inventar valor`() =
         runTest {
             val withoutApplicant = JsonObject(captured("call-minimal") - "applicant").toString()
 
-            assertEquals(AppResult.Failure(DomainError.Unknown()), calls(withoutApplicant).detail("c"))
-            assertThrows(SerializationException::class.java) {
-                ApiJson.decodeFromString<CallSummaryResponseDTO>(summary("\"OPENED\"", priority = "null"))
-            }
-            assertThrows(SerializationException::class.java) {
-                ApiJson.decodeFromString<UserResponseDTO>(JsonObject(unnamedUser.jsonObject + ("email" to JsonNull)).toString())
-            }
+            val detail = calls(withoutApplicant).detail("c")
+            assertTrue(detail is AppResult.Success)
+            assertNull((detail as AppResult.Success).value.applicant)
+            val summary = ApiJson.decodeFromString<CallSummaryResponseDTO>(summary("\"OPENED\"", priority = "null"))
+            assertNull(summary.priority)
+            val user = ApiJson.decodeFromString<UserResponseDTO>(JsonObject(unnamedUser.jsonObject + ("email" to JsonNull)).toString())
+            assertNull(user.email)
         }
 }

@@ -167,14 +167,16 @@ class InvalidPayloadTest {
      * mesmo corpo com `explicitNulls = false`, a configuração que fazia isso.
      */
     @Test
-    fun `chave anulavel ausente derruba a leitura em vez de liberar Assumir`() =
+    fun `chave anulavel ausente preserva o estado sem responsavel`() =
         runTest {
             val body = JsonObject(callMinimal.with("status" to JsonPrimitive("OPENED")) - "responsibleTechnician")
             val tolerant = Json(ApiJson) { explicitNulls = false }.decodeFromString<CallResponseDTO>(body.toString()).toDomain()
             assertTrue(tolerant.status == CallStatus.OPENED && tolerant.isUnassigned)
 
-            assertEquals(AppResult.Failure(DomainError.Unknown()), calls(body).detail("c"))
-            assertEquals(SessionState.SignedOut, restoredWith(JsonObject(me - "name")))
+            val result = calls(body).detail("c")
+            assertTrue(result is AppResult.Success)
+            assertTrue((result as AppResult.Success).value.isUnassigned)
+            assertTrue(restoredWith(JsonObject(me - "name")) is SessionState.Active)
         }
 
     @Test

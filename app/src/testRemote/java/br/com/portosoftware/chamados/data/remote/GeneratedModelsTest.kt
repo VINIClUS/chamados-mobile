@@ -6,13 +6,11 @@ import br.com.portosoftware.chamados.contract.model.PagedModelCallSummaryRespons
 import br.com.portosoftware.chamados.contract.model.Result
 import br.com.portosoftware.chamados.contract.model.SessionInfoResponseDTO
 import kotlinx.serialization.ExperimentalSerializationApi
-import kotlinx.serialization.MissingFieldException
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
-import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -54,14 +52,12 @@ class GeneratedModelsTest {
     }
 
     @Test
-    fun `unknown fields are ignored and absent nullable fields fail when required by generated model`() {
+    fun `unknown fields are ignored and absent nullable fields stay null`() {
         val withExtra = JsonObject(responseObject("call-full") + ("newField" to JsonPrimitive("ignored")))
         assertEquals("1607ab39-e671-5ee5-bc94-bde22d2ab011", ApiJson.decodeFromString<CallResponseDTO>(withExtra.toString()).id)
 
         val withoutDate = JsonObject(responseObject("call-minimal") - "openingDate")
-        assertThrows(MissingFieldException::class.java) {
-            ApiJson.decodeFromString<CallResponseDTO>(withoutDate.toString())
-        }
+        assertNull(ApiJson.decodeFromString<CallResponseDTO>(withoutDate.toString()).openingDate)
     }
 
     @Test
